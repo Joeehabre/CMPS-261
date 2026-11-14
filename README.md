@@ -1,39 +1,34 @@
 # NASA Kepler Exoplanet Candidate Classification
 
-**Course:** CMPS 261 Machine Learning
+**Course:** CMPS 261 Machine Learning (American University of Beirut)  
+**Track:** Track A, 4.1 Tabular (NASA Kepler Objects of Interest)  
+**Group 4:** Joe Habre and Joy Habib Najem  
 
-**Track:** Track A, 4.1 Tabular (NASA Kepler Objects of Interest)
+We formulate NASA Kepler Objects of Interest (KOI) vetting ($m = 9,564$ observations across $8,214$ unique host stars and $153$ archive attributes) as a binary classification task distinguishing **Potential Exoplanets** (`CONFIRMED` $\cup$ `CANDIDATE`, $y = 1$, $4,725$ instances, $49.40\%$) from **False Positives** (`FALSE POSITIVE`, $y = 0$, $4,839$ instances, $50.60\%$).
 
-**Group 4:** Joe Habre and Joy Habib Najem
+## Repository Structure & Downloadable Model Weights
 
-We classify Kepler Objects of Interest (KOIs) as potential exoplanets or false positives. The positive class combines `CONFIRMED` and `CANDIDATE` objects (`y = 1`); `FALSE POSITIVE` objects form the negative class (`y = 0`). Candidate labels are provisional, so this task predicts archive dispositions rather than establishing that an object is a real planet.
+| Path | Description |
+| :--- | :--- |
+| `data/cumulative.csv` | Committed NASA Exoplanet Archive KOI cumulative dataset snapshot ($9,564 \times 153$) |
+| `notebooks/02_final_exoplanet_classification.ipynb` | Final executed notebook: preprocessing, tuning, 5-fold grouped CV, ResNet-MLP, FT-Transformer, disjoint calibration, ablations, failure analysis, and locked test evaluation |
+| `models/final_xgboost_model.joblib` | Downloadable trained final XGBoost classifier (`500` trees, `max_depth=6`, `lr=0.03`) |
+| `models/final_resnet_mlp.pt` | Downloadable trained ResNet-MLP weights (`68,993` params) and disjoint temperature $T^* = 1.074$ |
+| `models/final_ft_transformer.pt` | Downloadable trained FT-Transformer weights (`30,593` params) and disjoint temperature $T^* = 1.064$ |
+| `models/final_neural_preprocessor.joblib` | Fitted median imputer (`add_indicator=True`) and `StandardScaler` pipeline for neural inference |
+| `figures/fig1_roc_pr_curves.png` | Held-out test set ROC and Precision-Recall curves ($300$ DPI) |
+| `figures/fig2_diagnostics_calibration.png` | Held-out test set Reliability Diagram and Complexity vs. Performance trade-off plot ($300$ DPI) |
+| `Reports/Final_Report.pdf` | Final 7-section project report |
+| `Reports/Poster.pdf` | Final 7-component project poster |
+| `requirements.txt` | Reproducible Python dependencies |
 
-The repository contains our progress-report experiments. We compare classical classifiers with a residual multilayer perceptron (ResNet-MLP), while examining feature leakage, validation design, calibration, and model failures.
+## Summary of Final Results (Held-Out Test Set, $m_{\text{test}} = 1,902$, $0$ Shared Host Stars)
 
-## Repository contents
-
-| Path | Contents |
-| --- | --- |
-| `data/cumulative.csv` | Committed NASA KOI dataset snapshot |
-| `notebooks/01_milestone_baseline.ipynb` | Preprocessing, model training, validation, and plots |
-| `figures/` | ROC/precision-recall curves and a reliability diagram |
-| `Reports/CMPS_261.pdf` | Draft progress report |
-| `Project Proposal.docx` | Initial topic proposal |
-| `requirements.txt` | Python dependencies with minimum versions |
-
-## Data and preprocessing
-
-The committed CSV contains 9,564 objects, 153 columns, and 8,214 distinct host stars. Its dispositions are 2,748 confirmed objects, 1,977 candidates, and 4,839 false positives. Column definitions are available in the [NASA Exoplanet Archive documentation](https://exoplanetarchive.ipac.caltech.edu/docs/API_kepcandidate_columns.html). The notebook includes the NASA TAP query used to download the cumulative table.
-
-We exclude the disposition columns, `koi_score`, the four `koi_fpflag_*` fields, and identifier/provenance fields from the model inputs. The notebook selects numerical columns with less than 50% missingness in the development partition, then adds a transit depth/radius feature, a transit duty-cycle feature, and six logarithmic transformations.
-
-Logistic regression, random forest, and ResNet-MLP use median imputation with missingness indicators fitted within each training fold. Logistic regression and ResNet-MLP also use standardization. XGBoost receives missing values directly. Some retained columns are vetting statistics; their availability at prediction time still needs to be justified before describing the feature set as entirely pre-vetting.
-
-## Current experiments
-
-- **Validation:** `GroupShuffleSplit` with seed 42 reserves 20% of host stars for a final test partition. The resulting partitions contain 7,662 development rows and 1,902 test rows, with no shared stars. The test partition is not evaluated by the current notebook.
-- **Logistic regression:** A three-fold `GroupKFold` search compares `C` values of 0.01, 0.1, 1.0, and 10.0 using mean ROC-AUC. The selected configuration is then included in the five-fold development evaluation.
-- **Random forest and XGBoost:** Both are evaluated with fixed parameter settings. The notebook does not implement an XGBoost hyperparameter search, despite its current display label saying "Tuned Classical Baseline."
-- **ResNet-MLP:** A residual network with batch normalization and dropout is trained with AdamW for 50 epochs per fold. The code retains predictions from the epoch with the lowest validation loss; it does not stop training early. Model and tensor operations currently run on the CPU.
-- **Outputs:** Five-fold grouped validation produces mean and standard deviation for ROC-AUC, average precision (currently labelled PR-AUC), and F1, plus mean precision, recall, ECE, and fit time. Plot legends use pooled out-of-fold metrics, which can differ from fold averages.
-- **Failure analysis:** XGBoost error rates are calculated for low-SNR objects, high-SNR objects, and objects with missing stellar radius, together with subgroup sizes.
+| Model | Capacity / Parameters | 5-Fold Grouped CV ROC-AUC | Test ROC-AUC | Test PR-AUC | Test F1 | Test ECE ($\downarrow$) | Test Brier ($\downarrow$) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Logistic Regression (Tuned $L_2, C=1.0$)** | $210$ weights | $0.9523 \pm 0.0073$ | $0.9525$ | $0.9475$ | $0.8686$ | $0.0376$ | $0.0868$ |
+| **Random Forest ($500$ trees, depth$=16$)** | $360,068$ nodes | $0.9684 \pm 0.0045$ | $0.9665$ | $0.9671$ | $0.8933$ | $0.0413$ | $0.0742$ |
+| **XGBoost (Tuned, depth$=6$, lr$=0.03$)** | $500$ boosted trees | $0.9711 \pm 0.0032$ | $0.9707$ | $0.9699$ | **0.9041** | $0.0189$ | $0.0677$ |
+| **ResNet-MLP (Disjoint Temp. Scaled)** | $68,993$ params | $0.9621 \pm 0.0044$ | $0.9627$ | $0.9629$ | $0.8764$ | $0.0258$ | $0.0776$ |
+| **FT-Transformer (Disjoint Temp. Scaled)** | $30,593$ params | $0.9653 \pm 0.0047$ | $0.9626$ | $0.9625$ | $0.8808$ | $0.0208$ | $0.0778$ |
+| **Calibrated Ensemble ($0.8, 0.1, 0.1$)** | Trees + $99,586$ params | **0.9715 $\pm$ 0.0036** | **0.9709** | **0.9703** | **0.9041** | **0.0157** | **0.0669** |
