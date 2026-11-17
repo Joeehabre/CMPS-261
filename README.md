@@ -25,10 +25,3 @@ We formulate NASA Kepler Objects of Interest (KOI) vetting ($m = 9,564$ observat
 | `Reports/Report progress.pdf` | Milestone 1 progress report |
 | `Poster/CMPS_261 poster.pdf` | Final 7-component project poster |
 | `requirements.txt` | Pinned Python dependencies matching the training environment |
-
-## Environment Setup & Portable Model Loading
-
-To reproduce the training environment (Python 3.13 / CUDA 13.0):
-
-```bash
-pip install -r requirements.txt
