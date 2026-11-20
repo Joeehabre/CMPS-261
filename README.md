@@ -23,5 +23,5 @@ We formulate NASA Kepler Objects of Interest (KOI) vetting ($m = 9,564$ observat
 | `figures/fig2_diagnostics_calibration.png` | Held-out test set Reliability Diagram and Complexity vs. Performance trade-off plot ($300$ DPI) |
 | `Reports/CMPS_261 final report.pdf` | Final 7-section project report |
 | `Reports/Report progress.pdf` | Milestone 1 progress report |
-| `Poster/CMPS_261 poster.pdf` | Final 7-component project poster |
+| `Presentation + Poster/poster.pdf` | Final 7-component project poster |
 | `requirements.txt` | Pinned Python dependencies matching the training environment |
